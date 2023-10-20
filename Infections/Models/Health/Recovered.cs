@@ -15,7 +15,7 @@ public class Recovered : AbstractHealthState
 
     override public IHealthState Progress()
     {
-        if (DateTime.Now-RecoveredSince > TimeSpan.FromSeconds(180))
+        if (DateTime.Now-RecoveredSince > TimeSpan.FromSeconds(30))
             return new HealthyNonInfectious();
         return this;
     }
