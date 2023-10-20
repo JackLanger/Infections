@@ -1,95 +1,79 @@
 ﻿using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using Infections.Models;
 using Infections.Models.Health;
 
 namespace Infections.Controller;
 
-public class PersonObserver
+public class PersonObserver : IPersonObserver
 {
-    private readonly IList<Person> _observedPersons;
-    private readonly IList<Person> _sickList;
-    private bool isAlive;
+    private readonly IList<Person> _observedPersons = new List<Person>();
+    private readonly IList<Person> _sickList = new List<Person>();
+    private bool _isAlive;
 
-    public PersonObserver()
+    public void Register<T>(T target)
     {
-        _observedPersons = new List<Person>();
-        _sickList = new List<Person>();
-        ObservePersons();
+        if (target is Person person)
+        {
+            _observedPersons.Add(person);
+            person.HealthStateChanged += OnPersonHealthStateChanged;
+            person.PositionChangedEvent += OnPersonPositionChanged;
+        }
     }
 
-    public void Cancel() => isAlive = false;
-
-    public void Start() => isAlive = true;
-
-    private void ObservePersons()
+    private void OnPersonPositionChanged(Person sender)
     {
+        Person[] sickListCopy;
+        lock (_sickList)
+        {
+            sickListCopy = new Person[_sickList.Count];
+            _sickList.CopyTo(sickListCopy, 0);
+        }
+
         Task.Run(() =>
         {
-            while (isAlive)
+            foreach (Person sick in sickListCopy)
             {
-                var sickListCopy = new Person[_sickList.Count];
-                _sickList.CopyTo(sickListCopy, 0);
-                foreach (Person sick in sickListCopy)
+                Person sickC = sick;
+                if (sender != sick && IsInInfectionRange(ref sickC, sender))
                 {
-                    InfectOthers(sick);
+                    sick.Infect(sender);
                 }
-                Thread.Sleep(1000);
-                sickListCopy = null;
             }
         });
     }
 
 
-    public void Register(Person person)
+    private void OnPersonHealthStateChanged(Person sender)
     {
-        _observedPersons.Add(person);
-        person.HealthStateChanged += Person_HealthStateChanged;
-    }
-
-    private void Person_HealthStateChanged(Person sender)
-    {
-        switch (sender.HealthState)
+        lock (_sickList)
         {
-            case Deceased:
-                _sickList.Remove(sender);
-                _observedPersons.Remove(sender);
-                sender.HealthStateChanged -= Person_HealthStateChanged;
-                return;
-            case Recovered:
-                _sickList.Remove(sender);
-                _observedPersons.Add(sender);
-                sender.HealthStateChanged -= Person_HealthStateChanged;
-                break;
-            case Infected:
-            case HealthyInfectious:
-                _sickList.Add(sender);
-                _observedPersons.Remove(sender);
-                Task.Run(() => InfectOthers(sender));
-                break;
-        }
-    }
-
-    private void InfectOthers(Person sender)
-    {
-        var copy = new Person[_observedPersons.Count];
-        _observedPersons.CopyTo(copy, 0);
-        foreach (Person other in copy)
-        {
-            if (other == sender) continue;
-
-            if (IsInInfectionRange(sender, other))
+            switch (sender.HealthState)
             {
-                sender.Infect(other);
+                case Deceased:
+                    _sickList.Remove(sender);
+                    _observedPersons.Remove(sender);
+                    sender.HealthStateChanged -= OnPersonHealthStateChanged;
+                    sender.PositionChangedEvent -= OnPersonPositionChanged;
+                    return;
+                case Recovered:
+                    _sickList.Remove(sender);
+                    _observedPersons.Add(sender);
+                    break;
+                case Infected:
+                case HealthyInfectious:
+                    _sickList.Add(sender);
+                    _observedPersons.Remove(sender);
+                    break;
             }
         }
     }
 
-    private bool IsInInfectionRange(Person sender, Person? other)
+
+    private bool IsInInfectionRange(ref Person sick, Person? other)
     {
         if (other is null) return false;
 
-        return (other!.Position-sender.Position).Length <= sender.InfectionRadius;
+        return (other!.Position-sick.Position).Length <= sick.InfectionRadius;
     }
 }

@@ -9,26 +9,36 @@ using Infections.Models.Health;
 
 namespace Infections.Controller;
 
-public class CanvasController
+public class InfectionController
 {
     private const int CommuteTargets = 4;
+    private const int PersonCount = 100;
     private readonly Canvas _canvas;
-    private readonly IList<CommuteTarget> _commuteTargets = new List<CommuteTarget>();
-    private readonly PersonObserver _personObserver;
-    private readonly IList<Person> _persons = new List<Person>();
-    private ICommand _startCommand;
+    private readonly IPersonObserver _commuteObserver;
+    private readonly IList<CommuteTarget> _commuteTargets;
+    private readonly IPersonObserver _personObserver;
+    private readonly IList<Person> _persons;
+    private bool _isRunning;
+    private ICommand? _startCommand;
 
-    public CanvasController(Canvas canvas)
+    public InfectionController(Canvas canvas)
     {
         _canvas = canvas;
         _personObserver = new PersonObserver();
+        _commuteObserver = new CommuteObserver();
+        _persons = new List<Person>();
+        _commuteTargets = new List<CommuteTarget>();
         InitCommuteTargets();
         InitPersons();
     }
 
     public ICommand StartCommand
     {
-        get => _startCommand ??= new DelegateCommand(StartLoop);
+        get => _startCommand ??= new DelegateCommand(() =>
+        {
+            if (!_isRunning)
+                StartLoop();
+        });
     }
 
     private void InitCommuteTargets()
@@ -37,12 +47,15 @@ public class CanvasController
         for (int i = 0; i < target; i++)
         for (int j = 0; j < target; j++)
         {
-            double attraction = RandomNumberGen.GetDouble(30, 300);
-
             CommuteTarget commuteTarget =
-                new CommuteTarget(RandomNumberGen.GetVectorWithin(i * 300+100, (i+1) * 300+100, j * 100+100,
-                    (j+1) * 200+100));
+                new CommuteTarget(RandomNumberGen.GetVectorWithin(
+                    i * 300+100,
+                    (i+1) * 300+100,
+                    j * 100+100,
+                    (j+1) * 200+100)
+                );
             _commuteTargets.Add(commuteTarget);
+            _commuteObserver.Register(commuteTarget);
             Draw(commuteTarget.Outline);
         }
     }
@@ -50,16 +63,13 @@ public class CanvasController
 
     private void InitPersons()
     {
-        int personCount = 100;
-        for (int i = 0; i < personCount; i++)
+        ;
+        for (int i = 0; i < PersonCount; i++)
         {
-            Person person = new Person(RandomNumberGen.GetRandomVector2(), RandomNumberGen.GetDouble());
-            foreach (CommuteTarget commuteTarget in _commuteTargets)
-            {
-                person.RegisterCommuteTarget(commuteTarget);
-            }
+            Person person = new Person(RandomNumberGen.GetRandomVector2(), RandomNumberGen.GetDouble(0.5, 2));
+            _commuteObserver.Register(person);
             _persons.Add(person);
-            Draw(person.Geometry);
+            if (person.Geometry is not null) Draw(person.Geometry);
             _personObserver.Register(person);
             person.HealthStateChanged += Person_HealthStateChanged;
         }
@@ -67,7 +77,7 @@ public class CanvasController
         for (int i = 0; i < 1; i++)
         {
             Person target = _persons[RandomNumberGen.GetInteger(0, _persons.Count-1)];
-            target.HealthState = new HealthyInfectious(target.Health);
+            target.HealthState = new HealthyInfectious();
         }
     }
 
@@ -91,8 +101,9 @@ public class CanvasController
 
     public void StartLoop()
     {
+        _isRunning = true;
         var remove = new List<Person>();
-        _personObserver.Start();
+
         Task.Run(() =>
         {
             while (_persons.Count > 0)
@@ -114,13 +125,13 @@ public class CanvasController
         }
         foreach (Person person in _persons)
         {
-            Draw(person.Geometry);
+            if (person.Geometry is not null) Draw(person.Geometry);
         }
     }
 
     private void ProcessAllPersons(List<Person> remove)
     {
-        foreach (Person person in _persons)
+        Parallel.ForEach(_persons, person =>
         {
             if (person.HealthState is Deceased)
             {
@@ -128,17 +139,21 @@ public class CanvasController
             }
             else
             {
-                Task.Run(person.Update);
+                person.UpdatePosition();
+                person.Progress();
                 Application.Current.Dispatcher.BeginInvoke(() => UpdatePerson(person));
             }
-        }
+        });
     }
 
     private void UpdatePerson(Person person)
     {
         Vector2 personPosition = person.Position;
-        person.Geometry.Margin = new Thickness(personPosition.X, personPosition.Y, 0, 0);
-        Draw(person.Geometry);
+        if (person.Geometry is not null)
+        {
+            person.Geometry.Margin = new Thickness(personPosition.X, personPosition.Y, 0, 0);
+            Draw(person.Geometry);
+        }
     }
 
 
@@ -147,7 +162,7 @@ public class CanvasController
         foreach (Person person in remove)
         {
             _persons.Remove(person);
-            _canvas.Children.Remove(person.Geometry);
+            Application.Current.Dispatcher.BeginInvoke(() => _canvas.Children.Remove(person.Geometry));
         }
     }
 }
