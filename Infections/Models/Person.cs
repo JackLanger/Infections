@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -15,7 +14,7 @@ public class Person : IHealthState
 
     public Person(Vector2 position, double speed)
     {
-        HealthState = new HealthyNonInfectious(Health);
+        HealthState = new HealthyNonInfectious();
         Position = position;
         Speed = speed;
         Velocity = RandomNumberGen.GetRandomVector2();
@@ -23,7 +22,8 @@ public class Person : IHealthState
         Geometry = CreateGeometry();
     }
 
-    public event AttractionZoneEnterEventHandler AttractionZoneEntered;
+    public event PositionChangedEventHandler PositionChangedEvent;
+
     public event HealthStateChangedEventHandler HealthStateChanged;
 
     #region Properties
@@ -40,11 +40,9 @@ public class Person : IHealthState
         }
     }
 
-    public Vector2 Position { get; set; }
-    public double Speed { get; set; }
+    public Vector2 Position { get; }
+    public double Speed { get; }
     public Vector2 Velocity { get; set; }
-
-    private readonly IList<CommuteTarget> _registeredTargets = new List<CommuteTarget>();
 
     public double Resistance
     {
@@ -61,12 +59,7 @@ public class Person : IHealthState
         get => HealthState.Color;
     }
 
-    public Ellipse Geometry { get; }
-
-    public Severity InfectionSeverity
-    {
-        get => HealthState.InfectionSeverity;
-    }
+    public Ellipse? Geometry { get; }
 
     public int Health { get; set; }
 
@@ -92,33 +85,21 @@ public class Person : IHealthState
 
     #region Public Methods
 
-    public void Update()
+    public void UpdatePosition()
     {
-        CheckForAttractionZones();
-        Progress();
         Vector2 velo = Velocity.Normalized();
         Position.X += velo.X * Speed;
         Position.Y += velo.Y * Speed;
 
         if (Position.X < 0 || Position.X > 800 || Position.Y < 0 || Position.Y > 600)
             Velocity *= -1;
+
+        PositionChanged();
     }
 
-    private void CheckForAttractionZones()
+    private void PositionChanged()
     {
-        foreach (CommuteTarget target in _registeredTargets)
-        {
-            if ((target.Position-Position).Length < target.AttractionRadius)
-            {
-                AttractionZoneEntered?.Invoke(this);
-            }
-        }
-    }
-
-    public void RegisterCommuteTarget(CommuteTarget target)
-    {
-        _registeredTargets.Add(target);
-        AttractionZoneEntered += target.Attract;
+        PositionChangedEvent?.Invoke(this);
     }
 
     public IHealthState Progress()
@@ -135,6 +116,6 @@ public class Person : IHealthState
     #endregion
 }
 
-public delegate void HealthStateChangedEventHandler(Person sender);
+public delegate void PositionChangedEventHandler(Person sender);
 
-public delegate void AttractionZoneEnterEventHandler(Person sender);
+public delegate void HealthStateChangedEventHandler(Person sender);

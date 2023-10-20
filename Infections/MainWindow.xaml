@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="MainWindow" Height="600" Width="800">
+        Title="MainWindow" Height="800" Width="1000">
     <Grid Background="Black">
         <Grid.RowDefinitions>
             <RowDefinition Height="50" />
@@ -12,18 +12,17 @@
         </Grid.RowDefinitions>
         <Button
             Width="100"
-            Command="{Binding StartCommand}">Start</Button>
+            Command="{Binding StartCommand}">
+            Start
+        </Button>
         <Border
             Grid.Row="1"
             BorderBrush="Black"
-            BorderThickness="1"
-            >
+            BorderThickness="1">
             <Canvas
                 x:Name="PeopleCanvas"
                 Background="#293133"
-                Width="auto">
-
-            </Canvas>
+                Width="auto" />
         </Border>
     </Grid>
 </Window>
