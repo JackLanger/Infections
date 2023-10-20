@@ -3,32 +3,29 @@ using System.Windows.Media;
 
 namespace Infections.Models.Health;
 
-public class Infected : IHealthState
+public class Infected : AbstractHealthState
 {
-    private readonly DateTime timeInfected;
+    private readonly DateTime _timeInfected;
+    private bool? _isDying;
 
-    public Infected(int health)
+    public Infected() : base(
+        0, 80, Brushes.Red)
     {
-        Health = health;
-        timeInfected = DateTime.Now;
+        _timeInfected = DateTime.Now;
     }
 
-    public IHealthState Progress()
+    private bool IsDying
     {
-        Health -= 5;
+        get => _isDying ??= RandomNumberGen.GetDouble() >= .9;
+    }
 
-        if (Health <= 0)
+    override public IHealthState Progress()
+    {
+        if (DateTime.Now-_timeInfected > TimeSpan.FromSeconds(10))
         {
-            return new Deceased();
+            return IsDying ? new Deceased() : new Recovered();
         }
 
-        return DateTime.Now-timeInfected < TimeSpan.FromSeconds(10) ? this : new Recovered(Health);
+        return this;
     }
-
-    public Severity InfectionSeverity { get; } = new Severity { MinThrow = 50, MaxThrow = 100, SafeThrow = 80 };
-    public int Health { get; set; }
-
-    public double Resistance { get; } = 0;
-    public double InfectionRadius { get; } = 80;
-    public Brush Color { get; } = Brushes.Red;
 }
