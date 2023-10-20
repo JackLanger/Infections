@@ -24,7 +24,7 @@ public abstract class AbstractHealthState : IHealthState
     public void Infect(Person other)
     {
         if (other.HealthState is Infected or HealthyInfectious or Incubating) return;
-        if (other.HealthState is Recovered recovered && canBeInfected(recovered))
+        if (other.HealthState is Recovered recovered && CanBeInfected(recovered))
             return;
 
         int infectionRoll = RandomNumberGen.GetInteger(0, 100);
@@ -36,6 +36,6 @@ public abstract class AbstractHealthState : IHealthState
         }
     }
 
-    private static bool canBeInfected(Recovered recovered) =>
+    private static bool CanBeInfected(Recovered recovered) =>
         DateTime.Now-recovered.RecoveredSince < TimeSpan.FromSeconds(180);
 }

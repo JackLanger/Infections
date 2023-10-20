@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Infections.Models;
 
-namespace Infections.Controller;
+namespace Infections.Observer;
 
 public class CommuteObserver : IRegisterToObserver
 {

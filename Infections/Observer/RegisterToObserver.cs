@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Infections.Models;
 using Infections.Models.Health;
 
-namespace Infections.Controller;
+namespace Infections.Observer;
 
 public class RegisterToObserver : IRegisterToObserver
 {
@@ -68,6 +68,6 @@ public class RegisterToObserver : IRegisterToObserver
     {
         if (other is null) return false;
 
-        return (other!.Position-sick.Position).Length <= sick.InfectionRadius;
+        return (other.Position-sick.Position).Length <= sick.InfectionRadius;
     }
 }

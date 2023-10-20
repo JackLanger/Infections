@@ -1,4 +1,4 @@
-﻿namespace Infections.Controller;
+﻿namespace Infections.Observer;
 
 public interface IRegisterToObserver
 {

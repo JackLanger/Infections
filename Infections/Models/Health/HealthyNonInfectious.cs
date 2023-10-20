@@ -5,14 +5,14 @@ namespace Infections.Models.Health;
 
 public class HealthyNonInfectious : AbstractHealthState
 {
-    private readonly DateTime dateOfInfection;
+    private readonly DateTime _dateOfInfection;
 
     public HealthyNonInfectious() : base(
         70, 0, Brushes.White)
     {
-        dateOfInfection = DateTime.Now;
+        _dateOfInfection = DateTime.Now;
     }
 
     override public IHealthState Progress() =>
-        DateTime.Now-dateOfInfection < TimeSpan.FromSeconds(15) ? this : new HealthyNonInfectious();
+        DateTime.Now-_dateOfInfection < TimeSpan.FromSeconds(15) ? this : new HealthyNonInfectious();
 }

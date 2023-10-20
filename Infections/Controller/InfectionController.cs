@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using Infections.Models;
 using Infections.Models.Health;
+using Infections.Observer;
 
 namespace Infections.Controller;
 
@@ -63,7 +64,6 @@ public class InfectionController
 
     private void InitPersons()
     {
-        ;
         for (int i = 0; i < PersonCount; i++)
         {
             Person person = new Person(RandomNumberGen.GetRandomVector2(), RandomNumberGen.GetDouble(0.5, 2));

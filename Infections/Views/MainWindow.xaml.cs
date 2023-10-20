@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using Infections.Controller;
 
-namespace Infections;
+namespace Infections.Views;
 
 /// <summary>
 ///     Interaction logic for MainWindow.xaml
