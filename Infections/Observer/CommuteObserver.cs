@@ -4,12 +4,9 @@ using Infections.Models;
 
 namespace Infections.Controller;
 
-public class CommuteObserver : IPersonObserver
+public class CommuteObserver : IRegisterToObserver
 {
     private readonly IList<CommuteTarget> _commuteTargets;
-
-    private readonly IList<Person> _observedPersons;
-    private bool _isObserving;
 
     public CommuteObserver() : this(new List<CommuteTarget>())
     {
@@ -17,7 +14,6 @@ public class CommuteObserver : IPersonObserver
 
     public CommuteObserver(IList<CommuteTarget> targets)
     {
-        _observedPersons = new List<Person>();
         _commuteTargets = targets;
     }
 
@@ -25,7 +21,6 @@ public class CommuteObserver : IPersonObserver
     {
         if (obj is Person person)
         {
-            _observedPersons.Add(person);
             person.PositionChangedEvent += OnPositionChanged;
         }
         else if (obj is CommuteTarget commute)
@@ -36,22 +31,14 @@ public class CommuteObserver : IPersonObserver
 
     private void OnPositionChanged(Person sender)
     {
-        Task.Run(() => AttractPerson(sender));
+        Task.Run(() => { Parallel.ForEach(_commuteTargets, target => { AttractIfInRange(sender, target); }); });
     }
 
-    private void AttractPerson(Person sender)
+    private static void AttractIfInRange(Person sender, CommuteTarget target)
     {
-        Parallel.ForEach(_commuteTargets, target =>
+        if (target.IsWithinRange(sender.Position))
         {
-            if (target.IsWithinRange(sender.Position))
-            {
-                target.Attract(sender);
-            }
-        });
-    }
-
-    public void Register(Person person)
-    {
-        _observedPersons.Add(person);
+            target.Attract(sender);
+        }
     }
 }

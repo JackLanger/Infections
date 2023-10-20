@@ -1,6 +1,6 @@
 ﻿namespace Infections.Controller;
 
-public interface IPersonObserver
+public interface IRegisterToObserver
 {
     void Register<T>(T person);
 }

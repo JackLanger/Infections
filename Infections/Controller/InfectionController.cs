@@ -14,17 +14,17 @@ public class InfectionController
     private const int CommuteTargets = 4;
     private const int PersonCount = 100;
     private readonly Canvas _canvas;
-    private readonly IPersonObserver _commuteObserver;
+    private readonly IRegisterToObserver _commuteObserver;
     private readonly IList<CommuteTarget> _commuteTargets;
-    private readonly IPersonObserver _personObserver;
     private readonly IList<Person> _persons;
+    private readonly IRegisterToObserver _registerToObserver;
     private bool _isRunning;
     private ICommand? _startCommand;
 
     public InfectionController(Canvas canvas)
     {
         _canvas = canvas;
-        _personObserver = new PersonObserver();
+        _registerToObserver = new RegisterToObserver();
         _commuteObserver = new CommuteObserver();
         _persons = new List<Person>();
         _commuteTargets = new List<CommuteTarget>();
@@ -70,7 +70,7 @@ public class InfectionController
             _commuteObserver.Register(person);
             _persons.Add(person);
             if (person.Geometry is not null) Draw(person.Geometry);
-            _personObserver.Register(person);
+            _registerToObserver.Register(person);
             person.HealthStateChanged += Person_HealthStateChanged;
         }
 
